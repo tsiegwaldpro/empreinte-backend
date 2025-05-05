@@ -14,17 +14,42 @@ export default async function auditWithLighthouse(url) {
   const runnerResult = await lighthouse(url, options);
   const report = runnerResult.lhr;
 
+  // 🔎 Construction des maps : catégorie et poids
+  const auditCategoryMap = {};
+  const auditWeightMap = {};
+  for (const [key, category] of Object.entries(report.categories)) {
+    for (const auditRef of category.auditRefs) {
+      auditCategoryMap[auditRef.id] = category.title;
+      auditWeightMap[auditRef.id] = auditRef.weight || 0;
+    }
+  }
+
+  // 🔧 Liste des recommandations enrichie
   const failingAudits = Object.values(report.audits)
     .filter((a) => a.score !== null && a.score < 0.9)
-    .map((a) => ({
-      id: a.id,
-      title: a.title,
-      score: a.score,
-      description: a.description,
-      displayValue: a.displayValue,
-    }));
+    .map((a) => {
+      const weight = auditWeightMap[a.id] || 0;
+      const rawImpact = (1 - a.score) * weight;
+      const impact = Math.min(Math.round(rawImpact * 20), 100); // normalisé sur 100
 
-  // 🔧 Données pour les calculs d'empreinte
+      let impactLevel = "🟢";
+      if (rawImpact > 0.8) impactLevel = "💥";
+      else if (rawImpact > 0.4) impactLevel = "⚠️";
+
+      return {
+        id: a.id,
+        title: a.title,
+        score: a.score,
+        description: a.description,
+        displayValue: a.displayValue,
+        group: auditCategoryMap[a.id] || "Autres",
+        weight,
+        impactLevel,
+        impact,
+      };
+    });
+
+  // 📊 Données pour calcul de l'empreinte
   const totalBytes = report.audits["total-byte-weight"].numericValue || 0;
   const domNodes = report.audits["dom-size"].numericValue || 0;
   const requests =
@@ -35,9 +60,10 @@ export default async function auditWithLighthouse(url) {
     5 * (requests / 100) -
     3 * (totalBytes / 1024 / 1000) -
     2 * (domNodes / 1000);
-  const ges = 2 + (3 * (100 - ecoIndex)) / 100; // gCO2e
-  const energy = 0.8 + (1.5 * (100 - ecoIndex)) / 100; // Wh
-  const water = 1 + (2 * (100 - ecoIndex)) / 100; // cl
+
+  const ges = 2 + (3 * (100 - ecoIndex)) / 100;
+  const energy = 0.8 + (1.5 * (100 - ecoIndex)) / 100;
+  const water = 1 + (2 * (100 - ecoIndex)) / 100;
 
   await chrome.kill();
 
@@ -49,7 +75,7 @@ export default async function auditWithLighthouse(url) {
     seo: Math.round(report.categories.seo.score * 100),
     totalByteWeight: report.audits["total-byte-weight"].displayValue,
     domSize: report.audits["dom-size"].displayValue,
-    requests: requests,
+    requests,
     recommandations: failingAudits,
     empreinte: {
       ecoIndex: parseFloat(ecoIndex.toFixed(2)),
