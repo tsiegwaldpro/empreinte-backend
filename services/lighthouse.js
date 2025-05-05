@@ -65,6 +65,14 @@ export default async function auditWithLighthouse(url) {
   const energy = 0.8 + (1.5 * (100 - ecoIndex)) / 100;
   const water = 1 + (2 * (100 - ecoIndex)) / 100;
 
+  // ✅ Récupération fiable du <title>
+  let pageTitle = report.audits["document-title"]?.displayValue || null;
+
+  // ⚠️ Si la valeur est un message générique, fallback sur l’URL
+  if (!pageTitle || pageTitle.toLowerCase().includes("document has")) {
+    pageTitle = report.finalDisplayedUrlTitle || report.finalUrl;
+  }
+
   await chrome.kill();
 
   return {
@@ -76,6 +84,7 @@ export default async function auditWithLighthouse(url) {
     totalByteWeight: report.audits["total-byte-weight"].displayValue,
     domSize: report.audits["dom-size"].displayValue,
     requests,
+    pageTitle,
     recommandations: failingAudits,
     empreinte: {
       ecoIndex: parseFloat(ecoIndex.toFixed(2)),
