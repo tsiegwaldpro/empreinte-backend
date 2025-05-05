@@ -15,18 +15,25 @@ export const auditWebsite = async (req, res) => {
   }
 };
 
-// ✅ Voici l’export manquant
 export const getAuditHistory = async (req, res) => {
   try {
     const audits = await Audit.find().sort({ createdAt: -1 }).limit(10);
     res.json(audits);
   } catch (err) {
-    console.error(
-      "Erreur lors de la récupération de l’historique :",
-      err.message
-    );
-    res
-      .status(500)
-      .json({ error: "Erreur lors de la récupération des audits" });
+    console.error("Erreur historique :", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+};
+
+export const getAuditHistoryBySite = async (req, res) => {
+  const { url } = req.query;
+  if (!url) return res.status(400).json({ error: "URL manquante" });
+
+  try {
+    const audits = await Audit.find({ url }).sort({ createdAt: -1 }).limit(10);
+    res.json(audits);
+  } catch (err) {
+    console.error("Erreur récupération historique :", err);
+    res.status(500).json({ error: "Erreur serveur" });
   }
 };
