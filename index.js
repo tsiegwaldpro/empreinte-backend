@@ -1,22 +1,21 @@
 import express from "express";
-import cors from "cors";
 import dotenv from "dotenv";
+import connectDB from "./config/db.js";
 import auditRoutes from "./routes/audit.routes.js";
 
+// Charger les variables d'env
 dotenv.config();
 
-const app = express();
-const PORT = 3000;
+// Connexion à MongoDB
+connectDB();
 
-app.use(cors());
+const app = express();
 app.use(express.json());
 
-app.get("/", (req, res) => {
-  res.send("Bienvenue sur Empreinte Scanner 🖥️🌱");
-});
-
+// Routes
 app.use("/api", auditRoutes);
 
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`✅ Serveur lancé sur http://localhost:${PORT}`);
+  console.log(`🚀 Serveur lancé sur http://localhost:${PORT}`);
 });
