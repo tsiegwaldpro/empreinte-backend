@@ -210,6 +210,24 @@ export const getActionsForReco = (rec, context = {}) => {
           code: "👉 Utiliser des conteneurs fixes ou ratio-box",
         },
       ];
+    case "issues-in-console":
+      actions.push(
+        {
+          label: "Ouvrir l’onglet 'Issues' dans les DevTools Chrome (F12)",
+          code: "Menu Chrome > Plus d’outils > Outils de développement > Onglet 'Issues'",
+        },
+        {
+          label:
+            "Analyser chaque problème détecté (sécurité, CORS, performances...)",
+          code: "👉 Cliquez sur chaque issue pour voir les détails et suivre les suggestions de correction.",
+        },
+        {
+          label:
+            "Corriger les erreurs réseau, de contenu mixte ou de permissions",
+          code: "Ex : forcer le HTTPS, ajuster les headers CORS, corriger les URLs cassées.",
+        }
+      );
+      break;
 
     default:
       break;
