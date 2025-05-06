@@ -26,21 +26,29 @@ export const register = async (req, res) => {
       lastName,
       email,
       password,
-      role, // ❗ ou ne pas le passer du tout pour rester en freemium
+      role,
     });
     await user.save();
-    await sendWelcomeEmail(user.email);
+
+    const confirmationToken = jwt.sign({ id: user._id }, JWT_SECRET, {
+      expiresIn: "1d",
+    });
+
+    await sendWelcomeEmail(user.email, confirmationToken);
 
     const token = generateToken(user);
-    res
-      .status(201)
-      .json({ token, user: { email: user.email, role: user.role } });
+    res.status(201).json({
+      token,
+      user: {
+        email: user.email,
+        role: user.role,
+      },
+    });
   } catch (err) {
     res.status(500).json({ message: "Erreur serveur", error: err.message });
   }
 };
 
-// 🟡 Login
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -48,6 +56,11 @@ export const login = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user)
       return res.status(401).json({ message: "Identifiants incorrects" });
+
+    if (!user.confirmed)
+      return res
+        .status(403)
+        .json({ message: "Compte non confirmé. Vérifie tes mails." });
 
     const isMatch = await user.comparePassword(password);
     if (!isMatch)
@@ -67,5 +80,29 @@ export const getCurrentUser = async (req, res) => {
     res.json(user);
   } catch (err) {
     res.status(500).json({ message: "Erreur serveur", error: err.message });
+  }
+};
+
+export const confirmEmail = async (req, res) => {
+  const { token } = req.params;
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const user = await User.findById(decoded.id);
+
+    if (!user)
+      return res.status(404).json({ message: "Utilisateur introuvable" });
+
+    if (user.confirmed)
+      return res.status(400).json({ message: "Compte déjà confirmé" });
+
+    user.confirmed = true;
+    await user.save();
+
+    res.json({ message: "✅ Compte confirmé avec succès" });
+  } catch (err) {
+    res
+      .status(400)
+      .json({ message: "Token invalide ou expiré", error: err.message });
   }
 };
