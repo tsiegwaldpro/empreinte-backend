@@ -3,25 +3,68 @@ import bcrypt from "bcrypt";
 
 const userSchema = new mongoose.Schema(
   {
-    email: { type: String, required: true, unique: true, lowercase: true },
-    password: { type: String, required: true },
+    firstName: {
+      type: String,
+      trim: true,
+      required: false,
+    },
+    lastName: {
+      type: String,
+      trim: true,
+      required: false,
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+    },
+    password: {
+      type: String,
+      required: true,
+    },
     role: {
       type: String,
-      enum: ["admin", "freemium", "premium"],
+      enum: ["freemium", "premium", "admin"],
       default: "freemium",
     },
+    status: {
+      type: String,
+      enum: ["active", "disabled"],
+      default: "active",
+    },
+    confirmed: {
+      type: Boolean,
+      default: false,
+    },
+    planExpiresAt: {
+      type: Date,
+      default: null,
+    },
+    lastLogin: {
+      type: Date,
+      default: null,
+    },
+    locale: {
+      type: String,
+      default: "fr",
+    },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
+// 🔒 Hasher le mot de passe avant sauvegarde
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
+  this.password = await bcrypt.hash(this.password, 10);
   next();
 });
 
-userSchema.methods.comparePassword = function (candidatePassword) {
+// 🔐 Vérifier le mot de passe
+userSchema.methods.comparePassword = async function (candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };
 

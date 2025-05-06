@@ -15,13 +15,19 @@ const generateToken = (user) => {
 // 🟢 Register
 export const register = async (req, res) => {
   try {
-    const { email, password, role } = req.body;
+    const { firstName, lastName, email, password, role } = req.body;
 
     const existing = await User.findOne({ email });
     if (existing)
       return res.status(400).json({ message: "Email déjà utilisé." });
 
-    const user = new User({ email, password, role });
+    const user = new User({
+      firstName,
+      lastName,
+      email,
+      password,
+      role, // ❗ ou ne pas le passer du tout pour rester en freemium
+    });
     await user.save();
     await sendWelcomeEmail(user.email);
 
