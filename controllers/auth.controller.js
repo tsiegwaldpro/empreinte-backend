@@ -34,6 +34,10 @@ export const register = async (req, res) => {
       expiresIn: "1d",
     });
 
+    console.log(
+      "📧 Envoi de l'email de confirmation avec token :",
+      confirmationToken
+    );
     await sendWelcomeEmail(user.email, confirmationToken);
 
     const token = generateToken(user);
