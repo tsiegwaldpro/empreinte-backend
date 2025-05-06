@@ -1,6 +1,7 @@
 import Audit from "../models/Audit.js";
 import auditWithLighthouse from "../services/lighthouse.js";
 import { getActionsForReco } from "../services/actions-recos.js";
+import { requireAuth } from "../middlewares/auth.middleware.js";
 
 // 🔧 Fonction pour enrichir les recommandations avec des actions concrètes
 const enrichRecommandationsWithActions = (recs, url) => {
@@ -24,6 +25,9 @@ const auditWebsite = async (req, res) => {
       url
     );
 
+    // 👤 Ajouter l'utilisateur connecté à l'audit
+    audit.user = req.user.id;
+
     await Audit.create(audit);
     res.json(audit);
   } catch (error) {
@@ -35,7 +39,9 @@ const auditWebsite = async (req, res) => {
 // 📜 Récupération des 10 derniers audits
 const getAuditHistory = async (req, res) => {
   try {
-    const audits = await Audit.find().sort({ createdAt: -1 }).limit(10);
+    const audits = await Audit.find({ user: req.user.id })
+      .sort({ createdAt: -1 })
+      .limit(10);
     res.json(audits);
   } catch (err) {
     console.error("Erreur historique :", err);
@@ -49,7 +55,9 @@ const getAuditHistoryBySite = async (req, res) => {
   if (!url) return res.status(400).json({ error: "URL manquante" });
 
   try {
-    const audits = await Audit.find({ url }).sort({ createdAt: -1 }).limit(10);
+    const audits = await Audit.find({ url, user: req.user.id })
+      .sort({ createdAt: -1 })
+      .limit(10);
     res.json(audits);
   } catch (err) {
     console.error("Erreur récupération historique :", err);

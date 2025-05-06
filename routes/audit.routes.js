@@ -1,4 +1,6 @@
 import express from "express";
+import { requireAuth } from "../middlewares/auth.middleware.js";
+
 import {
   auditWebsite,
   getAuditHistory,
@@ -7,8 +9,8 @@ import {
 
 const router = express.Router();
 
-router.post("/audit", auditWebsite);
-router.get("/history", getAuditHistory);
-router.get("/audit/history", getAuditHistoryBySite);
+router.post("/audit", requireAuth, auditWebsite);
+router.get("/history", requireAuth, getAuditHistory);
+router.get("/audit/history", requireAuth, getAuditHistoryBySite);
 
 export default router;

@@ -34,6 +34,11 @@ const AuditSchema = new mongoose.Schema(
     totalByteWeight: String,
     domSize: String,
     requests: Number,
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
     recommandations: [RecommandationSchema],
     empreinte: {
       ecoIndex: Number,
