@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import { sendWelcomeEmail } from "../utils/sendEmail.js";
+import { sendResetPasswordEmail } from "../utils/sendEmail.js";
 
 const JWT_SECRET = process.env.JWT_SECRET || "super_secret_key";
 
@@ -108,5 +109,50 @@ export const confirmEmail = async (req, res) => {
     res
       .status(400)
       .json({ message: "Token invalide ou expiré", error: err.message });
+  }
+};
+
+import crypto from "crypto";
+
+// ...
+
+export const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user)
+      return res.status(404).json({ message: "Aucun compte avec cet email" });
+
+    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "1h" });
+    await sendResetPasswordEmail(user.email, token);
+
+    res.json({
+      message: "📬 Un mail t’a été envoyé avec un lien de réinitialisation.",
+    });
+  } catch (err) {
+    console.error("Erreur forgotPassword:", err);
+    res.status(500).json({ message: "Erreur serveur", error: err.message });
+  }
+};
+
+export const resetPassword = async (req, res) => {
+  const { token } = req.params;
+  const { newPassword } = req.body;
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const user = await User.findById(decoded.id);
+    if (!user)
+      return res.status(404).json({ message: "Utilisateur introuvable" });
+
+    user.password = newPassword;
+    await user.save();
+
+    res.json({ message: "🔑 Mot de passe mis à jour avec succès" });
+  } catch (err) {
+    res
+      .status(400)
+      .json({ message: "Lien invalide ou expiré", error: err.message });
   }
 };
