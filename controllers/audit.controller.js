@@ -1,7 +1,7 @@
 import Audit from "../models/Audit.js";
 import auditWithLighthouse from "../services/lighthouse.js";
 import { getActionsForReco } from "../services/actions-recos.js";
-import { requireAuth } from "../middlewares/auth.middleware.js";
+import mongoose from "mongoose";
 
 // 🔧 Fonction pour enrichir les recommandations avec des actions concrètes
 const enrichRecommandationsWithActions = (recs, url) => {
@@ -13,20 +13,22 @@ const enrichRecommandationsWithActions = (recs, url) => {
 
 // 🔍 Audit d’un site
 const auditWebsite = async (req, res) => {
-  const { url } = req.body;
+  let { url } = req.body;
   if (!url) return res.status(400).json({ error: "URL manquante" });
+
+  // ✅ Nettoyage de l'URL : sans slash final et en minuscule
+  url = url.replace(/\/+$/, "").toLowerCase();
 
   try {
     const audit = await auditWithLighthouse(url);
 
-    // 💡 Ajout des actions concrètes aux recommandations
     audit.recommandations = enrichRecommandationsWithActions(
       audit.recommandations,
       url
     );
 
-    // 👤 Ajouter l'utilisateur connecté à l'audit
     audit.user = req.user.id;
+    audit.url = url; // 👈 Enregistre la version nettoyée
 
     await Audit.create(audit);
     res.json(audit);
@@ -51,19 +53,41 @@ const getAuditHistory = async (req, res) => {
 
 // 📄 Récupération des audits par site
 const getAuditHistoryBySite = async (req, res) => {
-  const { url } = req.query;
-  if (!url) return res.status(400).json({ error: "URL manquante" });
-
   try {
-    const audits = await Audit.find({ url, user: req.user.id })
-      .sort({ createdAt: -1 })
-      .limit(10);
-    res.json(audits);
+    let { site } = req.query;
+    const userId = req.user?.id;
+
+    console.log("🔍 Requête reçue pour site :", site);
+    console.log("🧑 User ID :", userId);
+    if (!site) {
+      return res.status(400).json({ message: "Paramètre site manquant" });
+    }
+
+    site = decodeURIComponent(site).replace(/\/+$/, "").toLowerCase();
+    console.log("🔎 URL normalisée :", site);
+
+    const audits = await Audit.find({
+      url: {
+        $regex: `^${site.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&")}(\\/)?$`,
+        $options: "i",
+      },
+      user: new mongoose.Types.ObjectId(userId),
+    }).sort({ createdAt: -1 });
+
+    console.log("📦 Audits trouvés :", audits.length);
+
+    if (!audits.length) {
+      return res
+        .status(404)
+        .json({ message: "Aucun audit trouvé pour ce site" });
+    }
+
+    res.status(200).json(audits);
   } catch (err) {
-    console.error("Erreur récupération historique :", err);
-    res.status(500).json({ error: "Erreur serveur" });
+    console.error("💥 Erreur getAuditHistoryBySite:", err);
+    res.status(500).json({ message: "Erreur serveur" });
   }
 };
 
-// ✅ Exports
+// ✅ Export des fonctions pour les routes
 export { auditWebsite, getAuditHistory, getAuditHistoryBySite };
