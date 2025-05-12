@@ -5,6 +5,7 @@ import {
   auditWebsite,
   getAuditHistory,
   getAuditHistoryBySite,
+  getGroupedAuditsBySite,
 } from "../controllers/audit.controller.js";
 
 const router = express.Router();
@@ -12,5 +13,6 @@ const router = express.Router();
 router.post("/audit", requireAuth, auditWebsite);
 router.get("/history", requireAuth, getAuditHistory);
 router.get("/audit/history", requireAuth, getAuditHistoryBySite);
+router.get("/grouped", requireAuth, getGroupedAuditsBySite);
 
 export default router;

@@ -89,5 +89,36 @@ const getAuditHistoryBySite = async (req, res) => {
   }
 };
 
+const getGroupedAuditsBySite = async (req, res) => {
+  try {
+    const audits = await Audit.find({ user: req.user.id });
+
+    const grouped = {};
+    for (const audit of audits) {
+      const cleanUrl = audit.url.replace(/\/+$/, "").toLowerCase();
+      if (!grouped[cleanUrl]) grouped[cleanUrl] = [];
+      grouped[cleanUrl].push(audit);
+    }
+
+    const result = Object.entries(grouped).map(([url, audits]) => ({
+      url,
+      count: audits.length,
+      lastAudit: audits.sort(
+        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+      )[0],
+    }));
+
+    res.status(200).json(result);
+  } catch (err) {
+    console.error("💥 Erreur getGroupedAuditsBySite:", err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
 // ✅ Export des fonctions pour les routes
-export { auditWebsite, getAuditHistory, getAuditHistoryBySite };
+export {
+  auditWebsite,
+  getAuditHistory,
+  getAuditHistoryBySite,
+  getGroupedAuditsBySite,
+};
