@@ -10,13 +10,4 @@ deploy:
     - echo "📦 Fichiers dans le dossier courant :"
     - find . -type f | wc -l
     - echo "🚀 Déploiement backend API via FTP (mode debug activé)"
-    - lftp -d -c "set ftp:ssl-allow no; \
-      open -u $FTP_USER,$FTP_PASS ftp.dalo8522.odns.fr; \
-      mirror -R --delete \
-      --exclude-glob node_modules \
-      --exclude-glob .git* \
-      --exclude-glob .env \
-      --exclude-glob .vscode \
-      --exclude-glob *.log \
-      --exclude-glob tests \
-      ./ ./"
+    - lftp -d -c "set ftp:ssl-allow no; open -u $FTP_USER,$FTP_PASS ftp.dalo8522.odns.fr; mirror -R --delete --exclude-glob node_modules --exclude-glob .git* --exclude-glob .env --exclude-glob .vscode --exclude-glob *.log --exclude-glob tests ./ ./"
