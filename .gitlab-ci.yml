@@ -8,4 +8,4 @@ deploy:
     - apk add --no-cache lftp
   script:
     - echo "Déploiement backend API sur O2Switch..."
-    - lftp -c "set ftp:ssl-allow no; open -u $FTP_USER,$FTP_PASS ftp.dalo8522.odns.fr; mirror -R --delete ./ ./"
+    - lftp -d -c "set ftp:ssl-allow no; open -u $FTP_USER,$FTP_PASS ftp.dalo8522.odns.fr; mirror -R --delete ./ ./"
