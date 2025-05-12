@@ -10,7 +10,7 @@ deploy:
     - echo "📁 Création du dossier deploy/"
     - mkdir deploy
     - echo "📦 Copie des fichiers nécessaires dans deploy/"
-    - cp server.js package.json deploy/
+    - cp index.js package.json deploy/
     - cp -r src deploy/
     - cp .env deploy/ || echo "Pas de .env en local, ignoré"
     - echo "🔢 Nombre de fichiers à déployer :"
