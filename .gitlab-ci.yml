@@ -11,8 +11,11 @@ deploy:
     - mkdir deploy
     - echo "📦 Copie des fichiers nécessaires dans deploy/"
     - cp index.js package.json deploy/
-    - cp .env deploy/ || echo "⚠️ Pas de fichier .env"
     - cp -r config controllers middlewares models routes services utils deploy/
+    - echo "🔐 Génération du .env depuis les variables CI/CD"
+    - echo "PORT=3000" > deploy/.env
+    - echo "MONGODB_URI=$MONGODB_URI" >> deploy/.env
+    - echo "JWT_SECRET=$JWT_SECRET" >> deploy/.env
     - echo "🔢 Nombre de fichiers à déployer :"
     - find deploy -type f | wc -l
     - echo "🚀 Déploiement du dossier deploy/ vers api.empreinte-app.fr (FTP debug ON)"
