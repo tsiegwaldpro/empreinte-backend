@@ -7,7 +7,13 @@ deploy:
   before_script:
     - apk add --no-cache lftp
   script:
-    - echo "📦 Fichiers dans le dossier courant :"
-    - find . -type f | wc -l
-    - echo "🚀 Déploiement backend API via FTP (mode debug activé)"
-    - lftp -d -c "set ftp:ssl-allow no; open -u $FTP_USER,$FTP_PASS ftp.dalo8522.odns.fr; mirror -R --delete --exclude-glob node_modules --exclude-glob .git* --exclude-glob .env --exclude-glob .vscode --exclude-glob *.log --exclude-glob tests ./ ./"
+    - echo "📁 Création du dossier deploy/"
+    - mkdir deploy
+    - echo "📦 Copie des fichiers nécessaires dans deploy/"
+    - cp server.js package.json deploy/
+    - cp -r src deploy/
+    - cp .env deploy/ || echo "Pas de .env en local, ignoré"
+    - echo "🔢 Nombre de fichiers à déployer :"
+    - find deploy -type f | wc -l
+    - echo "🚀 Déploiement du dossier deploy/ vers api.empreinte-app.fr (FTP debug ON)"
+    - lftp -d -c "set ftp:ssl-allow no; open -u $FTP_USER,$FTP_PASS ftp.dalo8522.odns.fr; mirror -R --delete deploy/ ./"
