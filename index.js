@@ -14,8 +14,14 @@ connectDB();
 // Initialiser express
 const app = express();
 
+const corsOptions = {
+  origin: ["http://localhost:5173", "https://empreinte-app.fr"],
+  credentials: true,
+};
+
 // Middlewares
-app.use(cors());
+app.use(cors(corsOptions));
+
 app.use(express.json());
 
 // Routes
