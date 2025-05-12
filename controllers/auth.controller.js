@@ -1,7 +1,8 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
-import { sendWelcomeEmail } from "../utils/sendEmail.js";
-import { sendResetPasswordEmail } from "../utils/sendEmail.js";
+import { sendEmail } from "../utils/sendEmail.js";
+
+const baseUrl = process.env.URL || "http://localhost:5173/";
 
 const JWT_SECRET = process.env.JWT_SECRET || "super_secret_key";
 
@@ -39,8 +40,17 @@ export const register = async (req, res) => {
       "📧 Envoi de l'email de confirmation avec token :",
       confirmationToken
     );
-    await sendWelcomeEmail(user.email, confirmationToken);
-
+    await sendEmail({
+      to: user.email,
+      subject: "Confirme ton compte Empreinte 🐾",
+      html: `
+    <h1>Bienvenue ${user.firstName} 👋</h1>
+    <p>Merci de t’être inscrit sur Empreinte !</p>
+    <p>Pour activer ton compte, clique ici :</p>
+    <a href="${baseUrl}confirm/${confirmationToken}">Confirmer mon compte</a>
+    <p><small>Ce lien expire dans 24h.</small></p>
+  `,
+    });
     const token = generateToken(user);
     res.status(201).json({
       token,
@@ -125,8 +135,17 @@ export const forgotPassword = async (req, res) => {
       return res.status(404).json({ message: "Aucun compte avec cet email" });
 
     const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "1h" });
-    await sendResetPasswordEmail(user.email, token);
-
+    await sendEmail({
+      to: user.email,
+      subject: "🔐 Réinitialise ton mot de passe",
+      html: `
+    <h2>Demande de réinitialisation</h2>
+    <p>Tu as demandé à réinitialiser ton mot de passe ? Clique ici :</p>
+   <a href="${baseUrl}reset-password/${token}">Réinitialiser</a>
+    <p><small>Ce lien est valable 1h. Si ce n'était pas toi, ignore ce message.</small></p>
+  `,
+    });
+    console.log("Envoi terminé ✅");
     res.json({
       message: "📬 Un mail t’a été envoyé avec un lien de réinitialisation.",
     });
