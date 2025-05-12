@@ -108,9 +108,32 @@ const getGroupedAuditsBySite = async (req, res) => {
       )[0],
     }));
 
+    console.log("📦 Résultat envoyé au front :", result);
     res.status(200).json(result);
   } catch (err) {
     console.error("💥 Erreur getGroupedAuditsBySite:", err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
+const getReferenceAudit = async (req, res) => {
+  const site = req.query.site?.trim().toLowerCase().replace(/\/+$/, "");
+  const userId = req.user?.id;
+
+  if (!site) return res.status(400).json({ message: "Site manquant" });
+
+  try {
+    const referenceAudit = await Audit.findOne({
+      url: site,
+      user: userId,
+    }).sort({ createdAt: 1 }); // 🔁 le + ancien audit
+
+    if (!referenceAudit)
+      return res.status(404).json({ message: "Aucun audit trouvé" });
+
+    res.status(200).json(referenceAudit);
+  } catch (err) {
+    console.error("Erreur getReferenceAudit:", err);
     res.status(500).json({ message: "Erreur serveur" });
   }
 };
@@ -121,4 +144,5 @@ export {
   getAuditHistory,
   getAuditHistoryBySite,
   getGroupedAuditsBySite,
+  getReferenceAudit,
 };
