@@ -1,15 +1,16 @@
+// utils/sendEmail.js
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 
 dotenv.config();
 
 const transporter = nodemailer.createTransport({
-  host: process.env.MAIL_HOST || "mail.empreinte-app.fr",
-  port: process.env.MAIL_PORT ? parseInt(process.env.MAIL_PORT) : 465,
-  secure: true, // true pour SSL sur port 465
+  host: "smtp-relay.sendinblue.com",
+  port: 587,
+  secure: false, // STARTTLS
   auth: {
-    user: process.env.MAIL_USER,
-    pass: process.env.MAIL_PASS,
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
   },
 });
 
