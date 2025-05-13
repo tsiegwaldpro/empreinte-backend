@@ -24,7 +24,9 @@ const app = express();
 const allowedOrigins = [
   "http://localhost:5173",
   "https://empreinte-frontend-production.up.railway.app",
-  "https://empreinte-app.fr", // pour plus tard avec domaine custom
+  "https://empreinte-app.fr",
+  "https://www.empreinte-app.fr", // ✅ À ajouter
+  "https://api.empreinte-app.fr", // ✅ si besoin
 ];
 
 app.use((req, res, next) => {
