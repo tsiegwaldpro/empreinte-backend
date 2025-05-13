@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import { sendEmail } from "../utils/sendEmail.js";
 
-const baseUrl = process.env.URL || "http://localhost:5173/";
+const baseUrl = process.env.baseURL || "http://www.empreinte-app.fr";
 
 const JWT_SECRET = process.env.JWT_SECRET || "super_secret_key";
 
