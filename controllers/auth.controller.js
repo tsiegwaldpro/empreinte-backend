@@ -122,6 +122,10 @@ export const confirmEmail = async (req, res) => {
   }
 };
 
+import crypto from "crypto";
+
+// ...
+
 export const forgotPassword = async (req, res) => {
   const { email } = req.body;
 
