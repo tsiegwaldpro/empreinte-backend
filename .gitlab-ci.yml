@@ -28,14 +28,14 @@ notify:
   image: curlimages/curl:latest
   stage: notify
   script:
-    - echo "📣 Envoi d’un embed Discord avec infos pipeline (succès)"
+    - echo "📣 Envoi d’un embed Discord BACKEND — Succès"
     - |
       curl -H "Content-Type: application/json" \
            -X POST \
            -d "{
              \"embeds\": [{
-               \"title\": \"✅ Déploiement réussi — Empreinte (branche prod)\",
-               \"description\": \"Tous les fichiers ont été mis en ligne sur **api.empreinte-app.fr** 🎉\",
+               \"title\": \"✅ Déploiement backend réussi — Empreinte (prod)\",
+               \"description\": \"Les fichiers backend ont été mis en ligne sur **api.empreinte-app.fr** 🎉\",
                \"color\": 65280,
                \"fields\": [
                  { \"name\": \"Auteur du commit\", \"value\": \"$GITLAB_USER_NAME\", \"inline\": true },
@@ -55,14 +55,14 @@ notify_failure:
   image: curlimages/curl:latest
   stage: notify
   script:
-    - echo "❌ Envoi d’un embed Discord — Échec du déploiement"
+    - echo "❌ Envoi d’un embed Discord BACKEND — Échec"
     - |
       curl -H "Content-Type: application/json" \
            -X POST \
            -d "{
              \"embeds\": [{
-               \"title\": \"🚨 Échec du déploiement — Empreinte (branche prod)\",
-               \"description\": \"Une erreur s’est produite lors du déploiement.\",
+               \"title\": \"🚨 Échec du déploiement backend — Empreinte (prod)\",
+               \"description\": \"Une erreur s’est produite lors du déploiement du backend.\",
                \"color\": 16711680,
                \"fields\": [
                  { \"name\": \"Auteur du commit\", \"value\": \"$GITLAB_USER_NAME\", \"inline\": true },
