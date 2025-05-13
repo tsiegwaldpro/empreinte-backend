@@ -1,5 +1,6 @@
 stages:
   - deploy
+  - notify
 
 deploy:
   image: alpine
@@ -20,3 +21,59 @@ deploy:
     - find deploy -type f | wc -l
     - echo "🚀 Déploiement du dossier deploy/ vers api.empreinte-app.fr"
     - lftp -d -c "set ftp:ssl-allow no; open -u $FTP_USER,$FTP_PASS ftp.dalo8522.odns.fr; mirror -R --delete --exclude-glob mongodb/ deploy/ ./"
+  only:
+    - prod
+
+notify:
+  image: curlimages/curl:latest
+  stage: notify
+  script:
+    - echo "📣 Envoi d’un embed Discord avec infos pipeline (succès)"
+    - |
+      curl -H "Content-Type: application/json" \
+           -X POST \
+           -d "{
+             \"embeds\": [{
+               \"title\": \"✅ Déploiement réussi — Empreinte (branche prod)\",
+               \"description\": \"Tous les fichiers ont été mis en ligne sur **api.empreinte-app.fr** 🎉\",
+               \"color\": 65280,
+               \"fields\": [
+                 { \"name\": \"Auteur du commit\", \"value\": \"$GITLAB_USER_NAME\", \"inline\": true },
+                 { \"name\": \"Pipeline\", \"value\": \"[Voir dans GitLab]($CI_PIPELINE_URL)\", \"inline\": true }
+               ],
+               \"footer\": {
+                 \"text\": \"Déployé le $(date +'%d/%m/%Y à %Hh%M')\"
+               }
+             }]
+           }" \
+           https://discord.com/api/webhooks/1371733095438356490/agrJaBFR_P3jV_RUvd7KW86mKMkuyWwZPzL_mOAN7oSVdYcWz7gSU4AiwTWMbZ0kBPEE
+  only:
+    - prod
+  when: on_success
+
+notify_failure:
+  image: curlimages/curl:latest
+  stage: notify
+  script:
+    - echo "❌ Envoi d’un embed Discord — Échec du déploiement"
+    - |
+      curl -H "Content-Type: application/json" \
+           -X POST \
+           -d "{
+             \"embeds\": [{
+               \"title\": \"🚨 Échec du déploiement — Empreinte (branche prod)\",
+               \"description\": \"Une erreur s’est produite lors du déploiement.\",
+               \"color\": 16711680,
+               \"fields\": [
+                 { \"name\": \"Auteur du commit\", \"value\": \"$GITLAB_USER_NAME\", \"inline\": true },
+                 { \"name\": \"Pipeline\", \"value\": \"[Voir le pipeline]($CI_PIPELINE_URL)\", \"inline\": true }
+               ],
+               \"footer\": {
+                 \"text\": \"Échec détecté le $(date +'%d/%m/%Y à %Hh%M')\"
+               }
+             }]
+           }" \
+           https://discord.com/api/webhooks/1371733095438356490/agrJaBFR_P3jV_RUvd7KW86mKMkuyWwZPzL_mOAN7oSVdYcWz7gSU4AiwTWMbZ0kBPEE
+  only:
+    - prod
+  when: on_failure
