@@ -5,7 +5,9 @@ export const requireAuth = (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Non autorisé, token manquant." });
+    return res
+      .status(401)
+      .json({ message: "Non autorisé, token manquant. :)" });
   }
 
   const token = authHeader.split(" ")[1];
