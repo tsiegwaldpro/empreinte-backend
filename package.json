@@ -24,6 +24,7 @@
     "lighthouse": "^12.6.0",
     "mongoose": "^8.14.1",
     "nodemailer": "^7.0.3",
+    "puppeteer": "^24.8.2",
     "resend": "^4.5.1"
   },
   "devDependencies": {

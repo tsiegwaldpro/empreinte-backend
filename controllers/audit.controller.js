@@ -1,7 +1,8 @@
 import Audit from "../models/Audit.js";
-import auditWithLighthouse from "../services/lighthouse.js";
+// import auditWithLighthouse from "../services/lighthouse.js"; ❌ plus utilisé
 import { getActionsForReco } from "../services/actions-recos.js";
 import mongoose from "mongoose";
+import { auditWithPuppeteer } from "../services/auditService.js";
 
 // 🔧 Fonction pour enrichir les recommandations avec des actions concrètes
 const enrichRecommandationsWithActions = (recs, url) => {
@@ -20,7 +21,7 @@ const auditWebsite = async (req, res) => {
   url = url.replace(/\/+$/, "").toLowerCase();
 
   try {
-    const audit = await auditWithLighthouse(url);
+    const audit = await auditWithPuppeteer(url);
 
     audit.recommandations = enrichRecommandationsWithActions(
       audit.recommandations,
@@ -33,8 +34,8 @@ const auditWebsite = async (req, res) => {
     await Audit.create(audit);
     res.json(audit);
   } catch (error) {
-    console.error("Erreur Lighthouse :", error.message);
-    res.status(500).json({ error: "Erreur lors de l'audit Lighthouse" });
+    console.error("Erreur Puppeteer :", error.message);
+    res.status(500).json({ error: "Erreur lors de l'audit" });
   }
 };
 
