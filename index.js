@@ -1,18 +1,35 @@
+// =========================
+// 🌐 SERVER SETUP
+// =========================
+
 import express from "express";
 import dotenv from "dotenv";
 import connectDB from "./config/db.js";
 import auditRoutes from "./routes/audit.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 
+// =========================
+// 🔐 ENV + DB
+// =========================
+
 dotenv.config();
 connectDB();
 
 const app = express();
 
-const allowedOrigins = ["https://empreinte-app.fr", "http://localhost:5173"];
+// =========================
+// 🔄 MIDDLEWARE – CORS
+// =========================
+
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://empreinte-frontend-production.up.railway.app",
+  "https://empreinte-app.fr", // pour plus tard avec domaine custom
+];
 
 app.use((req, res, next) => {
   const origin = req.headers.origin;
+
   if (allowedOrigins.includes(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader(
@@ -33,12 +50,25 @@ app.use((req, res, next) => {
   next();
 });
 
+// =========================
+// 📦 MIDDLEWARE JSON
+// =========================
+
 app.use(express.json());
+
+// =========================
+// 🔁 ROUTES
+// =========================
 
 app.use("/api", auditRoutes);
 app.use("/api/auth", authRoutes);
 
+// =========================
+// 🚀 SERVER
+// =========================
+
 const PORT = process.env.PORT || 3000;
+
 app.listen(PORT, () => {
   console.log(`🚀 Serveur lancé sur port ${PORT}`);
 });
