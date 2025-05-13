@@ -18,5 +18,5 @@ deploy:
     - echo "JWT_SECRET=$JWT_SECRET" >> deploy/.env
     - echo "🔢 Nombre de fichiers à déployer :"
     - find deploy -type f | wc -l
-    - echo "🚀 Déploiement du dossier deploy/ vers api.empreinte-app.fr (FTP debug ON)"
-    - lftp -d -c "set ftp:ssl-allow no; open -u $FTP_USER,$FTP_PASS ftp.dalo8522.odns.fr; mirror -R --delete deploy/ ./"
+    - echo "🚀 Déploiement du dossier deploy/ vers api.empreinte-app.fr"
+    - lftp -d -c "set ftp:ssl-allow no; open -u $FTP_USER,$FTP_PASS ftp.dalo8522.odns.fr; mirror -R --delete --exclude-glob mongodb/ deploy/ ./"
