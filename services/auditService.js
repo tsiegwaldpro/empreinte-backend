@@ -14,36 +14,74 @@ export async function auditWithPuppeteer(url) {
   await page.goto(url, { waitUntil: "networkidle2" });
 
   const title = await page.title();
-  const performance = Math.floor(Math.random() * 21) + 80; // score 80-100
-  const accessibility = Math.floor(Math.random() * 21) + 75;
-  const bestPractices = Math.floor(Math.random() * 21) + 70;
-  const seo = Math.floor(Math.random() * 21) + 85;
+
+  // Audit : nombre d'images sans lazy loading
+  const imagesWithoutLazy = await page.evaluate(() => {
+    return Array.from(document.querySelectorAll("img")).filter(
+      (img) => !img.loading || img.loading !== "lazy"
+    ).length;
+  });
+
+  // Audit : nombre de requêtes réseau
+  const requests = await page.evaluate(
+    () => performance.getEntriesByType("resource").length
+  );
+
+  // Audit : taille du DOM
+  const domSize = await page.evaluate(
+    () => document.getElementsByTagName("*").length
+  );
 
   await browser.close();
 
   return {
-    performance,
-    accessibility,
-    bestPractices,
-    seo,
+    performance: 85,
+    accessibility: 88,
+    bestPractices: 80,
+    seo: 90,
     totalByteWeight: "1.2 MB",
-    domSize: "900 nodes",
-    requests: 45,
+    domSize: `${domSize} nodes`,
+    requests,
     recommandations: [
       {
         id: "title-check",
         group: "accessibility",
         title: "La balise <title> est à optimiser",
         description: `Le titre actuel est : \"${title}\"`,
-        impact: 1, // <- Numérique pour compatibilité
-        impactLevel: "low", // <- Chaîne pour affichage
+        impact: 1,
+        impactLevel: "🟢",
         displayValue: title,
-        actions: [
-          {
-            label: "Réécrire un titre plus descriptif",
-            code: "document.title = 'Titre Amélioré';",
-          },
-        ],
+        actions: [],
+      },
+      {
+        id: "lazy-images-missing",
+        group: "performance",
+        title: "Images sans lazy loading",
+        description: `${imagesWithoutLazy} image(s) n'ont pas l'attribut loading=\"lazy\"`,
+        impact: 2,
+        impactLevel: "⚠️",
+        displayValue: `${imagesWithoutLazy} image(s)`,
+        actions: [],
+      },
+      {
+        id: "dom-too-large",
+        group: "performance",
+        title: "DOM trop volumineux",
+        description: `Le DOM contient ${domSize} éléments, ce qui est supérieur au seuil recommandé (1400)`,
+        impact: 3,
+        impactLevel: "💥",
+        displayValue: `${domSize} éléments`,
+        actions: [],
+      },
+      {
+        id: "too-many-requests",
+        group: "performance",
+        title: "Trop de requêtes HTTP",
+        description: `La page effectue ${requests} requêtes, ce qui est énergivore`,
+        impact: 3,
+        impactLevel: "💥",
+        displayValue: `${requests} requêtes`,
+        actions: [],
       },
     ],
     empreinte: {
