@@ -1,8 +1,11 @@
 import jwt from "jsonwebtoken";
-const JWT_SECRET = process.env.JWT_SECRET || "super_secret_key";
+
+const JWT_SECRET = process.env.JWT_SECRET || "MonCodeSecret2025";
 
 export const requireAuth = (req, res, next) => {
   const authHeader = req.headers.authorization;
+
+  console.log("🛡️ Requête entrante - Header Authorization :", authHeader);
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res
@@ -15,17 +18,12 @@ export const requireAuth = (req, res, next) => {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     req.user = decoded;
+
+    console.log("✅ Token décodé :", decoded);
+
     next();
   } catch (err) {
+    console.error("❌ Erreur de vérification JWT :", err.message);
     return res.status(401).json({ message: "Token invalide." });
   }
-};
-
-export const requireRole = (...roles) => {
-  return (req, res, next) => {
-    if (!req.user || !roles.includes(req.user.role)) {
-      return res.status(403).json({ message: "Accès interdit." });
-    }
-    next();
-  };
 };
