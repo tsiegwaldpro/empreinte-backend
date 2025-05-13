@@ -4,6 +4,10 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+// Log sécurité (ne montre pas le mot de passe, mais utile en debug)
+console.log("📤 SMTP_USER =", process.env.SMTP_USER);
+console.log("📤 MAIL_FROM =", process.env.MAIL_FROM || "(non défini)");
+
 const transporter = nodemailer.createTransport({
   host: "smtp-relay.sendinblue.com",
   port: 587,
@@ -15,13 +19,21 @@ const transporter = nodemailer.createTransport({
 });
 
 export const sendEmail = async ({ to, subject, html }) => {
+  const from = process.env.MAIL_FROM;
+
+  if (!from) {
+    console.error("❌ MAIL_FROM est vide ou non défini.");
+    throw new Error("Adresse d’expéditeur manquante");
+  }
+
   try {
     const info = await transporter.sendMail({
-      from: `"Empreinte" <${process.env.MAIL_USER}>`,
+      from: `"Empreinte" <${from}>`,
       to,
       subject,
       html,
     });
+
     console.log("✅ Mail envoyé :", info.messageId);
     return info;
   } catch (error) {
