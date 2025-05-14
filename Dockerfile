@@ -1,7 +1,7 @@
-# Étape 1 : Base légère avec Node.js
+# Étape 1 : Image de base légère avec Node.js
 FROM node:20-slim
 
-# Étape 2 : Installation des dépendances nécessaires à Chromium (Puppeteer)
+# Étape 2 : Installation des dépendances système nécessaires pour Chromium
 RUN apt-get update && apt-get install -y \
     wget \
     ca-certificates \
@@ -43,14 +43,17 @@ RUN apt-get update && apt-get install -y \
 # Étape 3 : Définir le répertoire de travail
 WORKDIR /app
 
-# Étape 4 : Copier le code source
-COPY . .
+# Étape 4 : Copier les fichiers package.json / package-lock.json d’abord pour le cache Docker
+COPY package*.json ./
 
-# Étape 5 : Installer les dépendances du projet
+# Étape 5 : Installer les dépendances du projet (y compris puppeteer)
 RUN npm install
 
-# Étape 6 : Ajouter Puppeteer et Lighthouse
-RUN npm install puppeteer lighthouse
+# Étape 6 : Copier le reste du code source
+COPY . .
 
-# Étape 7 : Démarrer l'application
+# Étape 7 : Exposer le port (si tu as un backend Express qui écoute sur 3000 par ex)
+EXPOSE 3000
+
+# Étape 8 : Commande de lancement
 CMD ["node", "index.js"]
