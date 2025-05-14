@@ -4,10 +4,6 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-// Log sécurité (ne montre pas le mot de passe, mais utile en debug)
-console.log("📤 SMTP_USER =", process.env.SMTP_USER);
-console.log("📤 MAIL_FROM =", process.env.MAIL_FROM || "(non défini)");
-
 const transporter = nodemailer.createTransport({
   host: "smtp-relay.sendinblue.com",
   port: 587,
@@ -34,7 +30,6 @@ export const sendEmail = async ({ to, subject, html }) => {
       html,
     });
 
-    console.log("✅ Mail envoyé :", info.messageId);
     return info;
   } catch (error) {
     console.error("❌ Erreur envoi mail :", error);
