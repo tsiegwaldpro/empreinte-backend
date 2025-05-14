@@ -1,14 +1,29 @@
+// services/lighthouse.js
+import puppeteer from "puppeteer";
 import lighthouse from "lighthouse";
-import { launch } from "chrome-launcher";
+import { URL } from "url";
 
 export default async function auditWithLighthouse(url) {
-  const chrome = await launch({ chromeFlags: ["--headless"] });
+  console.log(
+    "🚀 Lancement de l'audit via Puppeteer + Lighthouse (sans API Google) pour :",
+    url
+  );
+  console.log(
+    `🚀 Audit Puppeteer lancé pour ${url} à ${new Date().toLocaleString()}`
+  );
+
+  const browser = await puppeteer.launch({
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    headless: true,
+  });
+
+  const endpoint = new URL(browser.wsEndpoint());
 
   const options = {
     logLevel: "info",
     output: "json",
     onlyCategories: ["performance", "accessibility", "best-practices", "seo"],
-    port: chrome.port,
+    port: endpoint.port,
   };
 
   const runnerResult = await lighthouse(url, options);
@@ -68,12 +83,11 @@ export default async function auditWithLighthouse(url) {
   // ✅ Récupération fiable du <title>
   let pageTitle = report.audits["document-title"]?.displayValue || null;
 
-  // ⚠️ Si la valeur est un message générique, fallback sur l’URL
   if (!pageTitle || pageTitle.toLowerCase().includes("document has")) {
     pageTitle = report.finalDisplayedUrlTitle || report.finalUrl;
   }
 
-  await chrome.kill();
+  await browser.close();
 
   return {
     url: report.finalUrl,
