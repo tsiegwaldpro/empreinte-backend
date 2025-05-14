@@ -5,8 +5,6 @@ const JWT_SECRET = process.env.JWT_SECRET || "MonCodeSecret2025";
 export const requireAuth = (req, res, next) => {
   const authHeader = req.headers.authorization;
 
-  console.log("🛡️ Requête entrante - Header Authorization :", authHeader);
-
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res
       .status(401)
