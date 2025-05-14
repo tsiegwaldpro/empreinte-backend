@@ -7,7 +7,8 @@ import dotenv from "dotenv";
 import connectDB from "./config/db.js";
 import auditRoutes from "./routes/audit.routes.js";
 import authRoutes from "./routes/auth.routes.js";
-import adminRoutes from "./routes/admin.routes.js"; // ✅ AJOUT
+import adminRoutes from "./routes/admin.routes.js";
+import premiumRoutes from "./routes/premium.routes.js";
 
 // =========================
 // 🔐 ENV + DB
@@ -66,6 +67,7 @@ app.use(express.json());
 app.use("/api", auditRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes); // ✅ AJOUT
+app.use("/api", premiumRoutes); // ✅ Routes utilisateur premium
 
 // =========================
 // 🚀 SERVER

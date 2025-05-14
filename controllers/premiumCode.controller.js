@@ -4,9 +4,7 @@ import User from "../models/User.js";
 export const generatePremiumCode = async (req, res) => {
   try {
     const code = Math.random().toString(36).substr(2, 8).toUpperCase();
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
-
-    const newCode = new PremiumCode({ code, expiresAt });
+    const newCode = new PremiumCode({ code });
     await newCode.save();
 
     res.status(201).json({ code });
@@ -30,7 +28,7 @@ export const usePremiumCode = async (req, res) => {
       return res.status(400).json({ error: "Ce code a déjà été utilisé." });
     }
 
-    if (new Date(premiumCode.expiresAt) < new Date()) {
+    if (premiumCode.expiresAt && new Date(premiumCode.expiresAt) < new Date()) {
       return res.status(400).json({ error: "Ce code est expiré." });
     }
 
@@ -39,6 +37,7 @@ export const usePremiumCode = async (req, res) => {
       return res.status(404).json({ error: "Utilisateur introuvable." });
 
     user.role = "premium";
+    premiumCode.expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
     await user.save();
 
     premiumCode.isUsed = true;
@@ -58,7 +57,7 @@ export const getAllPremiumCodes = async (req, res) => {
   try {
     const codes = await PremiumCode.find()
       .sort({ createdAt: -1 })
-      .populate("usedBy", "email"); // Récupère l'email du user si utilisé
+      .populate("usedBy", "_id email"); // Récupère l'email du user si utilisé
 
     res.json(codes);
   } catch (err) {
@@ -108,5 +107,25 @@ export const deletePremiumCode = async (req, res) => {
   } catch (err) {
     console.error("Erreur deletePremiumCode:", err);
     res.status(500).json({ error: "Erreur lors de la suppression du code." });
+  }
+};
+
+export const getUserPremiumExpiration = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const code = await PremiumCode.findOne({
+      usedBy: userId,
+      expiresAt: { $exists: true },
+    }).sort({ expiresAt: -1 });
+
+    if (!code) {
+      return res.status(404).json({ message: "Aucun code actif trouvé." });
+    }
+
+    res.json({ expiresAt: code.expiresAt });
+  } catch (err) {
+    console.error("Erreur getUserPremiumExpiration:", err);
+    res.status(500).json({ error: "Erreur lors de la récupération." });
   }
 };

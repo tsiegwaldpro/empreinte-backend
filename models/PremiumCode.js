@@ -8,7 +8,7 @@ const premiumCodeSchema = new mongoose.Schema({
   },
   expiresAt: {
     type: Date,
-    required: true,
+    required: false,
   },
   isUsed: {
     type: Boolean,
