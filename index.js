@@ -7,6 +7,7 @@ import dotenv from "dotenv";
 import connectDB from "./config/db.js";
 import auditRoutes from "./routes/audit.routes.js";
 import authRoutes from "./routes/auth.routes.js";
+import adminRoutes from "./routes/admin.routes.js"; // ✅ AJOUT
 
 // =========================
 // 🔐 ENV + DB
@@ -25,8 +26,8 @@ const allowedOrigins = [
   "http://localhost:5173",
   "https://empreinte-frontend-production.up.railway.app",
   "https://empreinte-app.fr",
-  "https://www.empreinte-app.fr", // ✅ À ajouter
-  "https://api.empreinte-app.fr", // ✅ si besoin
+  "https://www.empreinte-app.fr",
+  "https://api.empreinte-app.fr",
 ];
 
 app.use((req, res, next) => {
@@ -64,6 +65,7 @@ app.use(express.json());
 
 app.use("/api", auditRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/admin", adminRoutes); // ✅ AJOUT
 
 // =========================
 // 🚀 SERVER
