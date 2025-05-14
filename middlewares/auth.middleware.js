@@ -17,8 +17,6 @@ export const requireAuth = (req, res, next) => {
     const decoded = jwt.verify(token, JWT_SECRET);
     req.user = decoded;
 
-    console.log("✅ Token décodé :", decoded);
-
     next();
   } catch (err) {
     console.error("❌ Erreur de vérification JWT :", err.message);
