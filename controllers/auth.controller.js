@@ -36,10 +36,6 @@ export const register = async (req, res) => {
       expiresIn: "1d",
     });
 
-    console.log(
-      "📧 Envoi de l'email de confirmation avec token :",
-      confirmationToken
-    );
     await sendEmail({
       to: user.email,
       subject: "Confirme ton compte Empreinte 🐾",
@@ -122,10 +118,6 @@ export const confirmEmail = async (req, res) => {
   }
 };
 
-import crypto from "crypto";
-
-// ...
-
 export const forgotPassword = async (req, res) => {
   const { email } = req.body;
 
@@ -145,7 +137,6 @@ export const forgotPassword = async (req, res) => {
     <p><small>Ce lien est valable 1h. Si ce n'était pas toi, ignore ce message.</small></p>
   `,
     });
-    console.log("Envoi terminé ✅");
     res.json({
       message: "📬 Un mail t’a été envoyé avec un lien de réinitialisation.",
     });

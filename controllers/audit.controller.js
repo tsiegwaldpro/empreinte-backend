@@ -57,14 +57,11 @@ const getAuditHistoryBySite = async (req, res) => {
     let { site } = req.query;
     const userId = req.user?.id;
 
-    console.log("🔍 Requête reçue pour site :", site);
-    console.log("🧑 User ID :", userId);
     if (!site) {
       return res.status(400).json({ message: "Paramètre site manquant" });
     }
 
     site = decodeURIComponent(site).replace(/\/+$/, "").toLowerCase();
-    console.log("🔎 URL normalisée :", site);
 
     const audits = await Audit.find({
       url: {
@@ -73,8 +70,6 @@ const getAuditHistoryBySite = async (req, res) => {
       },
       user: new mongoose.Types.ObjectId(userId),
     }).sort({ createdAt: -1 });
-
-    console.log("📦 Audits trouvés :", audits.length);
 
     if (!audits.length) {
       return res
@@ -108,7 +103,6 @@ const getGroupedAuditsBySite = async (req, res) => {
       )[0],
     }));
 
-    console.log("📦 Résultat envoyé au front :", result);
     res.status(200).json(result);
   } catch (err) {
     console.error("💥 Erreur getGroupedAuditsBySite:", err);
