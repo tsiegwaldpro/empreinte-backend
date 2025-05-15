@@ -1,5 +1,6 @@
 import express from "express";
 import { requireAuth } from "../middlewares/auth.middleware.js";
+import { isPremiumActive } from "../middlewares/isPremiumActive.js";
 
 import {
   usePremiumCode,
@@ -10,21 +11,26 @@ import {
   handleSitemap,
   handleSitemapGrouped,
   handleCrawl,
-  handleCrawlTopGroups, // 👈 nouvelle route
+  handleCrawlTopGroups,
 } from "../controllers/premium.controller.js";
 
 const router = express.Router();
 
-// 🔐 Premium codes (protégées par auth)
+// 🔐 Utilisation d'un code premium (accessible même si expiré)
 router.post("/premium/use-code", requireAuth, usePremiumCode);
+
+// 🔍 Voir la date d'expiration de son plan
 router.get("/premium/expiration", requireAuth, getUserPremiumExpiration);
 
-// 🗺️ Sitemap
-router.post("/sitemap", handleSitemap);
-router.post("/sitemap-groups", handleSitemapGrouped);
-
-// 🤖 Crawl par profondeur
-router.post("/crawl", handleCrawl); // 1 URL par groupe
-router.post("/crawl/top", handleCrawlTopGroups); // top X groupes les plus gros
+// 🗺️ Fonctions premium uniquement
+router.post("/sitemap", requireAuth, isPremiumActive, handleSitemap);
+router.post(
+  "/sitemap-groups",
+  requireAuth,
+  isPremiumActive,
+  handleSitemapGrouped
+);
+router.post("/crawl", requireAuth, isPremiumActive, handleCrawl);
+router.post("/crawl/top", requireAuth, isPremiumActive, handleCrawlTopGroups);
 
 export default router;

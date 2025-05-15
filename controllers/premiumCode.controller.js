@@ -33,18 +33,41 @@ export const usePremiumCode = async (req, res) => {
     }
 
     const user = await User.findById(req.user.id);
-    if (!user)
+    if (!user) {
       return res.status(404).json({ error: "Utilisateur introuvable." });
+    }
 
+    // ✅ Mise à jour du rôle
     user.role = "premium";
-    premiumCode.expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-    await user.save();
 
+    // ✅ Calcul d'expiration (on ajoute 24h à la date existante ou à now)
+    const now = new Date();
+    const current =
+      user.planExpiresAt && user.planExpiresAt > now ? user.planExpiresAt : now;
+
+    const newExpiration = new Date(current.getTime() + 24 * 60 * 60 * 1000);
+
+    premiumCode.expiresAt = newExpiration;
     premiumCode.isUsed = true;
     premiumCode.usedBy = user._id;
     await premiumCode.save();
 
-    res.json({ message: "Votre compte est maintenant Premium pour 7 jours." });
+    // ✅ On applique la date du code à l'utilisateur
+    user.role = "premium";
+    user.planExpiresAt = premiumCode.expiresAt;
+    await user.save();
+    await user.save();
+
+    // ✅ Mise à jour du code premium (synchronisé)
+    premiumCode.isUsed = true;
+    premiumCode.usedBy = user._id;
+    premiumCode.expiresAt = newExpiration;
+    await premiumCode.save();
+
+    res.json({
+      message: "Votre compte est maintenant Premium pour 24h.",
+      expiresAt: newExpiration,
+    });
   } catch (err) {
     console.error("Erreur usePremiumCode:", err);
     res
@@ -101,6 +124,23 @@ export const deletePremiumCode = async (req, res) => {
 
     if (!deleted) {
       return res.status(404).json({ error: "Code introuvable." });
+    }
+
+    // ✅ Rétrograder l'utilisateur s'il existe et a utilisé ce code
+    if (deleted.usedBy) {
+      const user = await User.findById(deleted.usedBy);
+
+      if (user) {
+        // Vérifier si c'était la date d'expiration liée à ce code
+        if (
+          user.role === "premium" &&
+          user.planExpiresAt?.toISOString() === deleted.expiresAt?.toISOString()
+        ) {
+          user.role = "freemium";
+          user.planExpiresAt = null;
+          await user.save();
+        }
+      }
     }
 
     res.json({ message: `Code ${code} supprimé avec succès.` });

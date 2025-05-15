@@ -77,6 +77,10 @@ export const login = async (req, res) => {
     if (!isMatch)
       return res.status(401).json({ message: "Identifiants incorrects" });
 
+    // ✅ Met à jour la date de dernière connexion
+    user.lastLogin = new Date();
+    await user.save();
+
     const token = generateToken(user);
     res.json({ token, user: { email: user.email, role: user.role } });
   } catch (err) {
@@ -164,5 +168,19 @@ export const resetPassword = async (req, res) => {
     res
       .status(400)
       .json({ message: "Lien invalide ou expiré", error: err.message });
+  }
+};
+
+// 🔐 Liste des utilisateurs pour l’espace admin
+export const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find(
+      {},
+      "email role firstName lastName lastLogin planExpiresAt"
+    );
+
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ message: "Erreur serveur", error: err.message });
   }
 };
