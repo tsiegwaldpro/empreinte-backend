@@ -7,6 +7,7 @@ import {
   getAuditHistoryBySite,
   getGroupedAuditsBySite,
   getReferenceAudit,
+  deleteAuditsBySite,
 } from "../controllers/audit.controller.js";
 
 const router = express.Router();
@@ -16,5 +17,6 @@ router.get("/history", requireAuth, getAuditHistory);
 router.get("/audit/history", requireAuth, getAuditHistoryBySite);
 router.get("/grouped", requireAuth, getGroupedAuditsBySite);
 router.get("/audit/reference", requireAuth, getReferenceAudit);
+router.delete("/audits/site", requireAuth, deleteAuditsBySite);
 
 export default router;

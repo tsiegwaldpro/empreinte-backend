@@ -173,6 +173,43 @@ const getAllRecosFromAudits = async (req, res) => {
   }
 };
 
+// 🔥 Suppression de tous les audits d’un site pour l'utilisateur connecté
+const deleteAuditsBySite = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    let { site } = req.body;
+
+    if (!site) {
+      return res.status(400).json({ message: "Paramètre site manquant" });
+    }
+
+    // Nettoyage URL comme d’habitude
+    site = site.trim().replace(/\/+$/, "").toLowerCase();
+
+    // Suppression
+    const result = await Audit.deleteMany({
+      user: userId,
+      url: {
+        $regex: `^${site.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&")}(\\/)?$`,
+        $options: "i",
+      },
+    });
+
+    if (result.deletedCount === 0) {
+      return res
+        .status(404)
+        .json({ message: "Aucun audit trouvé à supprimer" });
+    }
+
+    res.status(200).json({
+      message: `Suppression réussie (${result.deletedCount} audits supprimés)`,
+    });
+  } catch (err) {
+    console.error("💥 Erreur suppression audits par site :", err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
 // ✅ Export des fonctions pour les routes
 export {
   auditWebsite,
@@ -181,4 +218,5 @@ export {
   getGroupedAuditsBySite,
   getReferenceAudit,
   getAllRecosFromAudits,
+  deleteAuditsBySite,
 };
