@@ -132,6 +132,34 @@ const getReferenceAudit = async (req, res) => {
   }
 };
 
+const getAllRecosFromAudits = async (req, res) => {
+  try {
+    const audits = await Audit.find({}, "recommandations");
+
+    const recosMap = new Map();
+
+    audits.forEach((audit) => {
+      audit.recommandations.forEach((reco) => {
+        if (!recosMap.has(reco.id)) {
+          recosMap.set(reco.id, {
+            id: reco.id,
+            title: reco.title,
+            group: reco.group,
+            actions: reco.actions || [],
+          });
+        }
+      });
+    });
+
+    const allRecos = Array.from(recosMap.values());
+
+    res.status(200).json(allRecos);
+  } catch (err) {
+    console.error("Erreur récupération des recommandations:", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+};
+
 // ✅ Export des fonctions pour les routes
 export {
   auditWebsite,
@@ -139,4 +167,5 @@ export {
   getAuditHistoryBySite,
   getGroupedAuditsBySite,
   getReferenceAudit,
+  getAllRecosFromAudits,
 };
