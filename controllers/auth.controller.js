@@ -3,7 +3,6 @@ import User from "../models/User.js";
 import { sendEmail } from "../utils/sendEmail.js";
 
 const baseUrl = process.env.URL || "https://www.empreinte-app.fr/";
-
 const JWT_SECRET = process.env.JWT_SECRET || "super_secret_key";
 
 const generateToken = (user) => {
@@ -40,13 +39,14 @@ export const register = async (req, res) => {
       to: user.email,
       subject: "Confirme ton compte Empreinte 🐾",
       html: `
-    <h1>Bienvenue ${user.firstName} 👋</h1>
-    <p>Merci de t’être inscrit sur Empreinte !</p>
-    <p>Pour activer ton compte, clique ici :</p>
-    <a href="${baseUrl}confirm/${confirmationToken}">Confirmer mon compte</a>
-    <p><small>Ce lien expire dans 24h.</small></p>
-  `,
+        <h1>Bienvenue ${user.firstName} 👋</h1>
+        <p>Merci de t’être inscrit sur Empreinte !</p>
+        <p>Pour activer ton compte, clique ici :</p>
+        <a href="${baseUrl}confirm/${confirmationToken}">Confirmer mon compte</a>
+        <p><small>Ce lien expire dans 24h.</small></p>
+      `,
     });
+
     const token = generateToken(user);
     res.status(201).json({
       token,
@@ -77,7 +77,6 @@ export const login = async (req, res) => {
     if (!isMatch)
       return res.status(401).json({ message: "Identifiants incorrects" });
 
-    // ✅ Met à jour la date de dernière connexion
     user.lastLogin = new Date();
     await user.save();
 
@@ -135,11 +134,11 @@ export const forgotPassword = async (req, res) => {
       to: user.email,
       subject: "🔐 Réinitialise ton mot de passe",
       html: `
-    <h2>Demande de réinitialisation</h2>
-    <p>Tu as demandé à réinitialiser ton mot de passe ? Clique ici :</p>
-   <a href="${baseUrl}reset-password/${token}">Réinitialiser</a>
-    <p><small>Ce lien est valable 1h. Si ce n'était pas toi, ignore ce message.</small></p>
-  `,
+        <h2>Demande de réinitialisation</h2>
+        <p>Tu as demandé à réinitialiser ton mot de passe ? Clique ici :</p>
+        <a href="${baseUrl}reset-password/${token}">Réinitialiser</a>
+        <p><small>Ce lien est valable 1h. Si ce n'était pas toi, ignore ce message.</small></p>
+      `,
     });
     res.json({
       message: "📬 Un mail t’a été envoyé avec un lien de réinitialisation.",
@@ -168,19 +167,5 @@ export const resetPassword = async (req, res) => {
     res
       .status(400)
       .json({ message: "Lien invalide ou expiré", error: err.message });
-  }
-};
-
-// 🔐 Liste des utilisateurs pour l’espace admin
-export const getAllUsers = async (req, res) => {
-  try {
-    const users = await User.find(
-      {},
-      "email role firstName lastName lastLogin planExpiresAt"
-    );
-
-    res.json(users);
-  } catch (err) {
-    res.status(500).json({ message: "Erreur serveur", error: err.message });
   }
 };

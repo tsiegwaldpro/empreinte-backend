@@ -9,6 +9,7 @@ import auditRoutes from "./routes/audit.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import premiumRoutes from "./routes/premium.routes.js";
+import recoCatalogRoutes from "./routes/recocatalog.routes.js";
 
 // =========================
 // 🔐 ENV + DB
@@ -66,8 +67,9 @@ app.use(express.json());
 
 app.use("/api", auditRoutes);
 app.use("/api/auth", authRoutes);
-app.use("/api/admin", adminRoutes); // ✅ AJOUT
-app.use("/api", premiumRoutes); // ✅ Routes utilisateur premium
+app.use("/api/admin", adminRoutes);
+app.use("/api", premiumRoutes);
+app.use("/api", recoCatalogRoutes);
 
 // =========================
 // 🚀 SERVER

@@ -1,34 +1,46 @@
 import Audit from "../models/Audit.js";
+import RecoCatalog from "../models/RecoCatalog.js";
 import auditWithLighthouse from "../services/lighthouse.js";
-import { getActionsForReco } from "../services/actions-recos.js";
 import mongoose from "mongoose";
 
-// 🔧 Fonction pour enrichir les recommandations avec des actions concrètes
-const enrichRecommandationsWithActions = (recs, url) => {
+// Fonction pour enrichir recommandations avec actions du catalogue
+const enrichRecommandationsWithCatalogActions = async (recs) => {
+  if (!recs || recs.length === 0) return [];
+
+  const ids = recs.map((r) => r.id);
+  const catalogRecos = await RecoCatalog.find({ id: { $in: ids } });
+  const catalogMap = new Map(catalogRecos.map((c) => [c.id, c]));
+
+  recs.forEach((rec) => {
+    const actions = catalogMap.get(rec.id)?.actions || [];
+  });
+
   return recs.map((rec) => ({
     ...rec,
-    actions: getActionsForReco(rec, { url }),
+    actions: catalogMap.get(rec.id)?.actions || [],
   }));
 };
 
-// 🔍 Audit d’un site
+// Audit d’un site
 const auditWebsite = async (req, res) => {
   let { url } = req.body;
   if (!url) return res.status(400).json({ error: "URL manquante" });
 
-  // ✅ Nettoyage de l'URL : sans slash final et en minuscule
   url = url.replace(/\/+$/, "").toLowerCase();
 
   try {
     const audit = await auditWithLighthouse(url);
 
-    audit.recommandations = enrichRecommandationsWithActions(
-      audit.recommandations,
-      url
+    // Synchronisation automatique du catalogue
+    await syncRecoCatalog(audit.recommandations);
+
+    // Enrichissement des reco avec actions existantes
+    audit.recommandations = await enrichRecommandationsWithCatalogActions(
+      audit.recommandations
     );
 
     audit.user = req.user.id;
-    audit.url = url; // 👈 Enregistre la version nettoyée
+    audit.url = url;
 
     await Audit.create(audit);
     res.json(audit);
@@ -38,12 +50,20 @@ const auditWebsite = async (req, res) => {
   }
 };
 
-// 📜 Récupération des 10 derniers audits
+// Récupération des 10 derniers audits
 const getAuditHistory = async (req, res) => {
   try {
     const audits = await Audit.find({ user: req.user.id })
       .sort({ createdAt: -1 })
       .limit(10);
+
+    // On enrichit les reco pour chaque audit
+    for (const audit of audits) {
+      audit.recommandations = await enrichRecommandationsWithCatalogActions(
+        audit.recommandations
+      );
+    }
+
     res.json(audits);
   } catch (err) {
     console.error("Erreur historique :", err);
@@ -51,18 +71,18 @@ const getAuditHistory = async (req, res) => {
   }
 };
 
-// 📄 Récupération des audits par site
+// Récupération des audits par site, avec enrichissement
 const getAuditHistoryBySite = async (req, res) => {
   try {
     let { site } = req.query;
     const userId = req.user?.id;
 
-    if (!site) {
+    if (!site)
       return res.status(400).json({ message: "Paramètre site manquant" });
-    }
 
     site = decodeURIComponent(site).replace(/\/+$/, "").toLowerCase();
 
+    // Récupère les audits (documents mongoose)
     const audits = await Audit.find({
       url: {
         $regex: `^${site.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&")}(\\/)?$`,
@@ -77,13 +97,24 @@ const getAuditHistoryBySite = async (req, res) => {
         .json({ message: "Aucun audit trouvé pour ce site" });
     }
 
-    res.status(200).json(audits);
+    // Convertit chaque audit en objet JS simple, puis enrichit
+    const enrichedAudits = [];
+    for (const auditDoc of audits) {
+      const audit = auditDoc.toObject(); // <-- important ici
+      audit.recommandations = await enrichRecommandationsWithCatalogActions(
+        audit.recommandations
+      );
+      enrichedAudits.push(audit);
+    }
+
+    res.status(200).json(enrichedAudits);
   } catch (err) {
-    console.error("💥 Erreur getAuditHistoryBySite:", err);
+    console.error("Erreur getAuditHistoryBySite:", err);
     res.status(500).json({ message: "Erreur serveur" });
   }
 };
 
+// Regroupement audits par site
 const getGroupedAuditsBySite = async (req, res) => {
   try {
     const audits = await Audit.find({ user: req.user.id });
@@ -118,11 +149,12 @@ const getGroupedAuditsBySite = async (req, res) => {
 
     res.status(200).json(result);
   } catch (err) {
-    console.error("💥 Erreur getGroupedAuditsBySite:", err);
+    console.error("Erreur getGroupedAuditsBySite:", err);
     res.status(500).json({ message: "Erreur serveur" });
   }
 };
 
+// Audit de référence (plus ancien) par site
 const getReferenceAudit = async (req, res) => {
   const site = req.query.site?.trim().toLowerCase().replace(/\/+$/, "");
   const userId = req.user?.id;
@@ -133,10 +165,15 @@ const getReferenceAudit = async (req, res) => {
     const referenceAudit = await Audit.findOne({
       url: site,
       user: userId,
-    }).sort({ createdAt: 1 }); // 🔁 le + ancien audit
+    }).sort({ createdAt: 1 });
 
     if (!referenceAudit)
       return res.status(404).json({ message: "Aucun audit trouvé" });
+
+    referenceAudit.recommandations =
+      await enrichRecommandationsWithCatalogActions(
+        referenceAudit.recommandations
+      );
 
     res.status(200).json(referenceAudit);
   } catch (err) {
@@ -145,48 +182,17 @@ const getReferenceAudit = async (req, res) => {
   }
 };
 
-const getAllRecosFromAudits = async (req, res) => {
-  try {
-    const audits = await Audit.find({}, "recommandations");
-
-    const recosMap = new Map();
-
-    audits.forEach((audit) => {
-      audit.recommandations.forEach((reco) => {
-        if (!recosMap.has(reco.id)) {
-          recosMap.set(reco.id, {
-            id: reco.id,
-            title: reco.title,
-            group: reco.group,
-            actions: reco.actions || [],
-          });
-        }
-      });
-    });
-
-    const allRecos = Array.from(recosMap.values());
-
-    res.status(200).json(allRecos);
-  } catch (err) {
-    console.error("Erreur récupération des recommandations:", err);
-    res.status(500).json({ error: "Erreur serveur" });
-  }
-};
-
-// 🔥 Suppression de tous les audits d’un site pour l'utilisateur connecté
+// Suppression des audits par site
 const deleteAuditsBySite = async (req, res) => {
   try {
     const userId = req.user?.id;
     let { site } = req.body;
 
-    if (!site) {
+    if (!site)
       return res.status(400).json({ message: "Paramètre site manquant" });
-    }
 
-    // Nettoyage URL comme d’habitude
     site = site.trim().replace(/\/+$/, "").toLowerCase();
 
-    // Suppression
     const result = await Audit.deleteMany({
       user: userId,
       url: {
@@ -205,18 +211,46 @@ const deleteAuditsBySite = async (req, res) => {
       message: `Suppression réussie (${result.deletedCount} audits supprimés)`,
     });
   } catch (err) {
-    console.error("💥 Erreur suppression audits par site :", err);
+    console.error("Erreur suppression audits par site :", err);
     res.status(500).json({ message: "Erreur serveur" });
   }
 };
 
-// ✅ Export des fonctions pour les routes
+// Synchronisation catalogue reco
+const syncRecoCatalog = async (recs) => {
+  if (!recs || recs.length === 0) {
+    return;
+  }
+
+  const ids = recs.map((r) => r.id);
+
+  const existingRecos = await RecoCatalog.find({ id: { $in: ids } });
+  const existingIds = new Set(existingRecos.map((r) => r.id));
+
+  const newRecos = recs
+    .filter((r) => !existingIds.has(r.id))
+    .map((r) => ({
+      id: r.id,
+      title: r.title,
+      group: r.group,
+      description: r.description,
+      impact: r.impact,
+      impactLevel: r.impactLevel,
+      displayValue: r.displayValue,
+      actions: [],
+    }));
+
+  if (newRecos.length > 0) {
+    await RecoCatalog.insertMany(newRecos);
+  }
+};
+
 export {
   auditWebsite,
   getAuditHistory,
   getAuditHistoryBySite,
   getGroupedAuditsBySite,
   getReferenceAudit,
-  getAllRecosFromAudits,
   deleteAuditsBySite,
+  syncRecoCatalog,
 };

@@ -1,25 +1,16 @@
 import mongoose from "mongoose";
 
-// Sous-schéma pour une action concrète
-const ActionSchema = new mongoose.Schema(
-  {
-    label: String,
-    code: String,
-  },
-  { _id: false }
-);
-
-// Sous-schéma pour une recommandation
+// Sous-schéma pour une recommandation simplifiée dans l'audit
 const RecommandationSchema = new mongoose.Schema(
   {
-    id: String,
-    group: String,
-    title: String,
-    description: String,
-    impact: Number,
-    impactLevel: String,
-    displayValue: String,
-    actions: [ActionSchema],
+    id: { type: String, required: true }, // Identifiant unique de la reco
+    group: String, // Groupe (ex : "performance")
+    title: String, // Titre de la reco
+    description: String, // Description (optionnel)
+    impact: Number, // Impact ou score
+    impactLevel: String, // Niveau d'impact (ex : "💥")
+    displayValue: String, // Valeur à afficher (ex : "86%")
+    // on retire le champ actions, qui sera injecté dynamiquement
   },
   { _id: false }
 );
@@ -39,7 +30,7 @@ const AuditSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    recommandations: [RecommandationSchema],
+    recommandations: [RecommandationSchema], // reco sans actions
     empreinte: {
       ecoIndex: Number,
       gesPerVisit: String,
