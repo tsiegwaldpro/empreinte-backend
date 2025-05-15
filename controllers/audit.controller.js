@@ -95,13 +95,26 @@ const getGroupedAuditsBySite = async (req, res) => {
       grouped[cleanUrl].push(audit);
     }
 
-    const result = Object.entries(grouped).map(([url, audits]) => ({
-      url,
-      count: audits.length,
-      lastAudit: audits.sort(
+    const result = Object.entries(grouped).map(([url, audits]) => {
+      const sorted = audits.sort(
         (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-      )[0],
-    }));
+      );
+      const last = sorted[0];
+
+      return {
+        url,
+        count: audits.length,
+        lastAudit: {
+          createdAt: last.createdAt,
+          scores: {
+            performance: last.performance,
+            accessibility: last.accessibility,
+            bestPractices: last.bestPractices,
+            seo: last.seo,
+          },
+        },
+      };
+    });
 
     res.status(200).json(result);
   } catch (err) {
