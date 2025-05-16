@@ -2,24 +2,7 @@ import Audit from "../models/Audit.js";
 import RecoCatalog from "../models/RecoCatalog.js";
 import auditWithLighthouse from "../services/lighthouse.js";
 import mongoose from "mongoose";
-
-// Fonction pour enrichir recommandations avec actions du catalogue
-const enrichRecommandationsWithCatalogActions = async (recs) => {
-  if (!recs || recs.length === 0) return [];
-
-  const ids = recs.map((r) => r.id);
-  const catalogRecos = await RecoCatalog.find({ id: { $in: ids } });
-  const catalogMap = new Map(catalogRecos.map((c) => [c.id, c]));
-
-  recs.forEach((rec) => {
-    const actions = catalogMap.get(rec.id)?.actions || [];
-  });
-
-  return recs.map((rec) => ({
-    ...rec,
-    actions: catalogMap.get(rec.id)?.actions || [],
-  }));
-};
+import { enrichRecommandationsWithCatalogActions } from "../utils/recoActions.utils.js";
 
 // Audit d’un site
 const auditWebsite = async (req, res) => {
@@ -34,9 +17,10 @@ const auditWebsite = async (req, res) => {
     // Synchronisation automatique du catalogue
     await syncRecoCatalog(audit.recommandations);
 
-    // Enrichissement des reco avec actions existantes
+    // Enrichissement des reco avec actions dynamiques ou catalogue
     audit.recommandations = await enrichRecommandationsWithCatalogActions(
-      audit.recommandations
+      audit.recommandations,
+      audit.lighthouseAudits || {} // Ajoute ce paramètre si tu le passes bien dans ton service
     );
 
     audit.user = req.user.id;

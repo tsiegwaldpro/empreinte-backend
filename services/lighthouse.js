@@ -87,6 +87,12 @@ export default async function auditWithLighthouse(url) {
     pageTitle = report.finalDisplayedUrlTitle || report.finalUrl;
   }
 
+  // 🟢 Ajout : récupération de tous les audits détaillés par id (pour les actions dynamiques)
+  const lighthouseAudits = {};
+  Object.keys(report.audits).forEach((auditId) => {
+    lighthouseAudits[auditId] = report.audits[auditId];
+  });
+
   await browser.close();
 
   return {
@@ -108,5 +114,6 @@ export default async function auditWithLighthouse(url) {
       ges100Visits: `${((ges * 100) / 1000).toFixed(2)} kgCO2e`,
       water100Visits: `${((water * 100) / 100).toFixed(2)} L`,
     },
+    lighthouseAudits, // 👈 Ajout ici pour l’exploitation dans le controller !
   };
 }
