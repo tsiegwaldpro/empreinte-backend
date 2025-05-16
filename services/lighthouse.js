@@ -12,13 +12,16 @@ export default async function auditWithLighthouse(url) {
     `🚀 Audit Puppeteer lancé pour ${url} à ${new Date().toLocaleString()}`
   );
 
+  // Lancement de Puppeteer (Chrome headless)
   const browser = await puppeteer.launch({
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
     headless: true,
   });
 
+  // Extraction du port WebSocket pour Lighthouse
   const endpoint = new URL(browser.wsEndpoint());
 
+  // Options Lighthouse : catégorie ciblées + port
   const options = {
     logLevel: "info",
     output: "json",
@@ -26,10 +29,11 @@ export default async function auditWithLighthouse(url) {
     port: endpoint.port,
   };
 
+  // Lancement audit Lighthouse
   const runnerResult = await lighthouse(url, options);
   const report = runnerResult.lhr;
 
-  // 🔎 Construction des maps : catégorie et poids
+  // Construction des maps catégorie et poids
   const auditCategoryMap = {};
   const auditWeightMap = {};
   for (const [key, category] of Object.entries(report.categories)) {
@@ -39,7 +43,7 @@ export default async function auditWithLighthouse(url) {
     }
   }
 
-  // 🔧 Liste des recommandations enrichie
+  // Construction liste des recommandations (score < 0.9)
   const failingAudits = Object.values(report.audits)
     .filter((a) => a.score !== null && a.score < 0.9)
     .map((a) => {
@@ -64,7 +68,7 @@ export default async function auditWithLighthouse(url) {
       };
     });
 
-  // 📊 Données pour calcul de l'empreinte
+  // Calcul données pour empreinte environnementale
   const totalBytes = report.audits["total-byte-weight"].numericValue || 0;
   const domNodes = report.audits["dom-size"].numericValue || 0;
   const requests =
@@ -80,14 +84,13 @@ export default async function auditWithLighthouse(url) {
   const energy = 0.8 + (1.5 * (100 - ecoIndex)) / 100;
   const water = 1 + (2 * (100 - ecoIndex)) / 100;
 
-  // ✅ Récupération fiable du <title>
+  // Récupération fiable du titre de page
   let pageTitle = report.audits["document-title"]?.displayValue || null;
-
   if (!pageTitle || pageTitle.toLowerCase().includes("document has")) {
     pageTitle = report.finalDisplayedUrlTitle || report.finalUrl;
   }
 
-  // 🟢 Ajout : récupération de tous les audits détaillés par id (pour les actions dynamiques)
+  // Récupération complète des audits détaillés par ID (pour actions dynamiques)
   const lighthouseAudits = {};
   Object.keys(report.audits).forEach((auditId) => {
     lighthouseAudits[auditId] = report.audits[auditId];
@@ -95,7 +98,7 @@ export default async function auditWithLighthouse(url) {
 
   await browser.close();
 
-  return {
+  const result = {
     url: report.finalUrl,
     performance: Math.round(report.categories.performance.score * 100),
     accessibility: Math.round(report.categories.accessibility.score * 100),
@@ -114,6 +117,8 @@ export default async function auditWithLighthouse(url) {
       ges100Visits: `${((ges * 100) / 1000).toFixed(2)} kgCO2e`,
       water100Visits: `${((water * 100) / 100).toFixed(2)} L`,
     },
-    lighthouseAudits, // 👈 Ajout ici pour l’exploitation dans le controller !
+    lighthouseAudits, // <-- Important : on renvoie tout l'objet pour enrichissement
   };
+
+  return result;
 }

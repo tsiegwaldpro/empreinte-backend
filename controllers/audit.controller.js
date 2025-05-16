@@ -20,8 +20,16 @@ const auditWebsite = async (req, res) => {
     // Enrichissement des reco avec actions dynamiques ou catalogue
     audit.recommandations = await enrichRecommandationsWithCatalogActions(
       audit.recommandations,
-      audit.lighthouseAudits || {} // Ajoute ce paramètre si tu le passes bien dans ton service
+      audit.lighthouseAudits || {}
     );
+
+    if (Array.isArray(audit.recommandations)) {
+      audit.recommandations = audit.recommandations.map((rec) => ({
+        ...rec,
+        actions: rec.actions || [],
+        advice: rec.advice || [],
+      }));
+    }
 
     audit.user = req.user.id;
     audit.url = url;
@@ -35,17 +43,23 @@ const auditWebsite = async (req, res) => {
 };
 
 // Récupération des 10 derniers audits
+// Récupération des 10 derniers audits
 const getAuditHistory = async (req, res) => {
   try {
     const audits = await Audit.find({ user: req.user.id })
       .sort({ createdAt: -1 })
       .limit(10);
 
-    // On enrichit les reco pour chaque audit
     for (const audit of audits) {
-      audit.recommandations = await enrichRecommandationsWithCatalogActions(
-        audit.recommandations
-      );
+      if (
+        !Array.isArray(audit.recommandations) ||
+        !audit.recommandations[0]?.actions
+      ) {
+        audit.recommandations = await enrichRecommandationsWithCatalogActions(
+          audit.recommandations,
+          audit.lighthouseAudits || {} // <-- AJOUT ici !
+        );
+      }
     }
 
     res.json(audits);
@@ -81,12 +95,13 @@ const getAuditHistoryBySite = async (req, res) => {
         .json({ message: "Aucun audit trouvé pour ce site" });
     }
 
-    // Convertit chaque audit en objet JS simple, puis enrichit
+    // IMPORTANT : conversion documents mongoose en objets JS simples
     const enrichedAudits = [];
     for (const auditDoc of audits) {
-      const audit = auditDoc.toObject(); // <-- important ici
+      const audit = auditDoc.toObject();
       audit.recommandations = await enrichRecommandationsWithCatalogActions(
-        audit.recommandations
+        audit.recommandations,
+        audit.lighthouseAudits || {} // <-- AJOUT ici !
       );
       enrichedAudits.push(audit);
     }
@@ -156,7 +171,8 @@ const getReferenceAudit = async (req, res) => {
 
     referenceAudit.recommandations =
       await enrichRecommandationsWithCatalogActions(
-        referenceAudit.recommandations
+        referenceAudit.recommandations,
+        referenceAudit.lighthouseAudits || {} // <-- AJOUT ici !
       );
 
     res.status(200).json(referenceAudit);

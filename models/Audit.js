@@ -1,3 +1,5 @@
+// models/Audit.js
+
 import mongoose from "mongoose";
 
 // Sous-schéma pour une recommandation simplifiée dans l'audit
@@ -30,7 +32,7 @@ const AuditSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    recommandations: [RecommandationSchema], // reco sans actions
+    recommandations: [RecommandationSchema], // recos sans actions (actions injectées dynamiquement)
     empreinte: {
       ecoIndex: Number,
       gesPerVisit: String,
@@ -39,6 +41,8 @@ const AuditSchema = new mongoose.Schema(
       ges100Visits: String,
       water100Visits: String,
     },
+    // ✅ CHAMP AJOUTÉ : tous les audits lighthouse bruts par id (sert aux actions dynamiques)
+    lighthouseAudits: { type: mongoose.Schema.Types.Mixed, default: {} },
   },
   { timestamps: true }
 );
