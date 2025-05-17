@@ -8,6 +8,8 @@ import {
   getGroupedAuditsBySite, // GET /grouped : Audits groupés par site
   getReferenceAudit, // GET /audit/reference : Audit de référence d'un site
   deleteAuditsBySite, // DELETE /audits/site : Suppression d'audits d'un site
+  getAllAudits,
+  deleteAuditById,
 } from "../controllers/audit.controller.js";
 
 const router = express.Router();
@@ -24,5 +26,7 @@ router.get("/audit/history", requireAuth, getAuditHistoryBySite);
 router.get("/grouped", requireAuth, getGroupedAuditsBySite);
 router.get("/audit/reference", requireAuth, getReferenceAudit);
 router.delete("/audits/site", requireAuth, deleteAuditsBySite);
+router.get("/audit/all", requireAuth, getAllAudits);
+router.delete("/audit/:id", requireAuth, deleteAuditById);
 
 export default router;

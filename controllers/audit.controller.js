@@ -245,6 +245,33 @@ const syncRecoCatalog = async (recs) => {
   }
 };
 
+// GET /audit/all : Liste complète des audits de l'utilisateur (non groupé, non limité)
+const getAllAudits = async (req, res) => {
+  try {
+    const audits = await Audit.find({ user: req.user.id }).sort({
+      createdAt: -1,
+    });
+    res.status(200).json(audits);
+  } catch (err) {
+    console.error("Erreur getAllAudits:", err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
+// Suppression d’un audit par ID
+const deleteAuditById = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const auditId = req.params.id;
+    const audit = await Audit.findOneAndDelete({ _id: auditId, user: userId });
+    if (!audit) return res.status(404).json({ message: "Audit non trouvé" });
+    res.status(200).json({ message: "Audit supprimé avec succès" });
+  } catch (err) {
+    console.error("Erreur suppression audit par ID :", err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
 export {
   auditWebsite,
   getAuditHistory,
@@ -253,4 +280,6 @@ export {
   getReferenceAudit,
   deleteAuditsBySite,
   syncRecoCatalog,
+  getAllAudits,
+  deleteAuditById,
 };
